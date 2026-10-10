@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Inter } from "next/font/google";
 import { loadSaved, removeSaved, type Saved } from "../lib/store";
+import AccountSync from "../lib/AccountSync";
+import { useUser } from "../lib/useUser";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 type Live = { id: string | number; price: number; was: number; pct: number; sizes: string[] };
@@ -13,6 +15,7 @@ export default function FavorisPage() {
   const [saved, setSaved] = useState<Saved[] | null>(null);
   const [deals, setDeals] = useState<Live[] | null>(null);
   const [tab, setTab] = useState<"all" | "want">("all");
+  const { user, ready } = useUser();
 
   useEffect(() => {
     setSaved(loadSaved());
@@ -40,6 +43,7 @@ export default function FavorisPage() {
 
   return (
     <div className={`${inter.className} min-h-screen bg-white text-neutral-900`}>
+      <AccountSync />
       <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
         <Link href="/" className="text-sm font-semibold text-neutral-600 hover:text-black">← Accueil</Link>
         <h1 className="text-xl font-extrabold">Mes trouvailles</h1>
@@ -47,6 +51,12 @@ export default function FavorisPage() {
       </header>
 
       <main className="mx-auto max-w-5xl px-5 pb-16">
+        {ready && !user && saved && saved.length > 0 && (
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f3edfa] px-4 py-3">
+            <p className="text-sm font-semibold text-[#5b2a85]">Ces trouvailles ne sont gardées que sur cet appareil. Crée un compte gratuit pour ne pas les perdre.</p>
+            <Link href="/connexion" className="shrink-0 rounded-full bg-[#753AA9] px-5 py-2 text-sm font-bold text-white hover:opacity-90">Créer mon compte</Link>
+          </div>
+        )}
         {saved && saved.length > 0 && (
           <div className="mb-6 flex flex-wrap items-center gap-2">
             {(["all", "want"] as const).map((t) => (

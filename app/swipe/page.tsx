@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Inter } from "next/font/google";
 import { addSaved, removeSaved, learn, loadSaved, loadTaste, affinity, loadSeen, markSeen, unmarkSeen, clearSeen, type Taste } from "../lib/store";
+import AccountSync from "../lib/AccountSync";
+import { useUser } from "../lib/useUser";
 import { DEFAULT_PROFILE, loadProfile, passes, saveProfile, type Profile } from "../lib/filters-core";
 import FilterBar from "../lib/FilterBar";
 
@@ -154,6 +156,8 @@ export default function SwipePage() {
   const start = useRef<{ x: number; y: number } | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const [seen0, setSeen0] = useState<Set<string> | null>(null);
+  const { user, ready } = useUser();
+  const [nudgeOff, setNudgeOff] = useState(false);
   const [bursts, setBursts] = useState<{ id: number; parts: { dx: number; dy: number; rot: number; e: string }[] }[]>([]);
   const burstId = useRef(0);
 
@@ -296,6 +300,7 @@ export default function SwipePage() {
 
   return (
     <div className={`${inter.className} relative flex min-h-screen flex-col overflow-hidden bg-[#09051a] text-white`}>
+      <AccountSync />
       <style>{DZ_CSS}</style>
       <Backdrop image={current?.image} />
       <header className="relative z-10 mx-auto flex w-full max-w-md items-center justify-between px-5 py-4">
@@ -314,6 +319,18 @@ export default function SwipePage() {
           {total > 0 ? <>💰 <span className="text-emerald-300">{total} $</span> d&apos;économies repérées</> : "Swipe pour repérer des économies"}
         </span>
       </div>
+
+      {ready && !user && !nudgeOff && history.length >= 10 && (
+        <div className="relative z-10 mx-auto mb-2 w-full max-w-md px-5">
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-white/10 px-4 py-2.5 text-xs text-white ring-1 ring-white/20 backdrop-blur-md">
+            <span>Garde tes trouvailles sur tous tes appareils : crée ton compte gratuit.</span>
+            <span className="flex shrink-0 items-center gap-2">
+              <Link href="/connexion" className="rounded-full bg-white px-3 py-1.5 font-bold text-neutral-900">Créer</Link>
+              <button onClick={() => setNudgeOff(true)} aria-label="Fermer" className="text-white/60 hover:text-white">✕</button>
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="relative z-10 mx-auto w-full max-w-md space-y-2 px-5">
         <div className="flex items-center gap-2">

@@ -58,5 +58,5 @@ export function loadProfile(): Profile {
   try { const v = localStorage.getItem(KEY); return v ? { ...DEFAULT_PROFILE, ...JSON.parse(v) } : DEFAULT_PROFILE; } catch { return DEFAULT_PROFILE; }
 }
 export function saveProfile(p: Profile) {
-  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* ignoré */ }
+  try { localStorage.setItem(KEY, JSON.stringify(p)); window.dispatchEvent(new Event("dropz:changed")); } catch { /* ignoré */ }
 }

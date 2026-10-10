@@ -6,6 +6,8 @@ import Link from "next/link";
 import { addSaved, removeSaved, loadSaved, loadTaste, affinity, type Taste } from "./lib/store";
 import { DEFAULT_PROFILE, loadProfile, passes, saveProfile, type Profile } from "./lib/filters-core";
 import FilterBar from "./lib/FilterBar";
+import AccountSync from "./lib/AccountSync";
+import { useUser } from "./lib/useUser";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 
@@ -293,6 +295,7 @@ export default function HomePage() {
   const setGroup = (g: Group) => updateProfile({ ...profile, group: g });
   const [taste, setTaste] = useState<Taste | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  const { user } = useUser();
 
   useEffect(() => {
     setTaste(loadTaste()); setSavedCount(loadSaved().length); setProfile(loadProfile());
@@ -353,6 +356,7 @@ export default function HomePage() {
 
   return (
     <div className={`${inter.className} min-h-screen bg-white text-neutral-900`}>
+      <AccountSync />
       <div className="bg-neutral-900 py-2 text-center text-xs font-medium text-white">
         Les meilleures aubaines des magasins, au même endroit
       </div>
@@ -375,7 +379,10 @@ export default function HomePage() {
           </div>
 
           <div className="ml-auto flex items-center gap-4 sm:gap-5">
-            <button aria-label="Compte" className="text-neutral-700 hover:text-black"><Icon d={USER} /></button>
+            <Link href="/connexion" aria-label="Compte" className="relative text-neutral-700 hover:text-black">
+              <Icon d={USER} />
+              {user && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />}
+            </Link>
             <Link href="/favoris" aria-label="Mes trouvailles" className="relative text-neutral-700 hover:text-black">
               <Icon d={HEART} />
               {savedCount > 0 && <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d6336c] px-1 text-[10px] font-bold text-white">{savedCount}</span>}
