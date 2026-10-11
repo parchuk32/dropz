@@ -25,22 +25,23 @@ const GROUPS: { id: Group; label: string }[] = [
 
 function groupOf(g: string): Exclude<Group, "all"> | "autre" | null {
   const t = g.toLowerCase();
-  if (t === "home" || t === "others") return null;
+  if (t === "home" || t === "others") return null; // maison, autres : ignorés
   if (/baby|bebe|bébé/.test(t)) return "bebe";
   if (/teen|^ado/.test(t)) return "ado";
   if (/women|femme|ladies/.test(t)) return "femme";
   if (/^men$|homme/.test(t)) return "homme";
   if (/kid|enfant|girl|boy|fille|garcon|sitebm/.test(t)) return "enfant";
-  return "autre";
+  return "autre"; // boutiques sans info de catégorie (visibles dans « Tout »)
 }
 
 const fmt = (n: number) => `${n.toFixed(2).replace(".", ",")} $`;
 
+// Les plus belles aubaines : économie en $ pondérée par le % de rabais
 const score = (d: Deal) => (d.was - d.price) * (d.pct / 100);
-
+// Alterne les boutiques pour que la liste ne soit pas dominée par une seule
 function mixByRetailer(list: Deal[], key: (d: Deal) => number = (d) => -score(d)): Deal[] {
   const buckets = new Map<string, Deal[]>();
-  ([...list].sort((a, b) => key(a) - key(b))).forEach((d) => {
+  [...list].sort((a, b) => key(a) - key(b)).forEach((d) => {
     if (!buckets.has(d.retailer)) buckets.set(d.retailer, []);
     buckets.get(d.retailer)!.push(d);
   });
@@ -54,6 +55,7 @@ function mixByRetailer(list: Deal[], key: (d: Deal) => number = (d) => -score(d)
   return out;
 }
 
+// Ordre « neutre » : un mélange stable (pas trié par prix ni par rabais)
 const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return h; };
 type SortId = "mix" | "rabais" | "prixAsc" | "prixDesc" | "boutique";
 const SORTS: { id: SortId; label: string }[] = [
@@ -86,39 +88,6 @@ function Logo({ className = "" }: { className?: string }) {
   );
 }
 
-// ---------- Background Animé Ultra Stylé ----------
-function AnimatedBackground() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden -z-10">
-      {/* Balises de style pour les keyframes CSS fluides */}
-      <style jsx global>{`
-        @keyframes floatSlow1 {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          50% { transform: translate(60px, 40px) scale(1.1); }
-        }
-        @keyframes floatSlow2 {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          50% { transform: translate(-50px, -60px) scale(1.15); }
-        }
-        @keyframes floatSlow3 {
-          0%, 100% { transform: translate(0px, 0px) scale(1); }
-          50% { transform: translate(40px, -50px) scale(1.05); }
-        }
-        .animate-blob-1 { animation: floatSlow1 12s ease-in-out infinite; }
-        .animate-blob-2 { animation: floatSlow2 16s ease-in-out infinite; }
-        .animate-blob-3 { animation: floatSlow3 14s ease-in-out infinite; }
-      `}</style>
-      
-      {/* Orbe violette haut gauche */}
-      <div className="absolute -top-20 -left-20 h-96 w-96 rounded-full bg-[#753AA9]/20 blur-[100px] animate-blob-1" />
-      {/* Orbe turquoise droite */}
-      <div className="absolute top-1/4 -right-20 h-[420px] w-[420px] rounded-full bg-[#39D2C0]/20 blur-[120px] animate-blob-2" />
-      {/* Orbe rose/violette centre bas */}
-      <div className="absolute top-2/3 left-1/3 h-[380px] w-[380px] rounded-full bg-[#d6336c]/15 blur-[110px] animate-blob-3" />
-    </div>
-  );
-}
-
 // ---------- Carrousel : Top 3 des plus grosses économies ----------
 function Hero({ top, loading }: { top: Deal[]; loading: boolean }) {
   const [i, setI] = useState(1);
@@ -135,7 +104,7 @@ function Hero({ top, loading }: { top: Deal[]; loading: boolean }) {
   if (!loading && n === 0) return null;
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-[#f3edfa]/80 to-white/50 backdrop-blur-sm" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+    <section className="relative overflow-hidden bg-gradient-to-b from-[#f3edfa] to-white" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
       <div className="pt-8 text-center">
         <p className="text-xs font-bold uppercase tracking-widest text-emerald-600">Top 3 · Économies du moment</p>
         <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">Les aubaines qui te font garder le plus d&apos;argent</h1>
@@ -144,7 +113,7 @@ function Hero({ top, loading }: { top: Deal[]; loading: boolean }) {
       <div className="relative mx-auto h-[430px] max-w-6xl sm:h-[490px]">
         {loading
           ? [-1, 0, 1].map((o) => (
-              <div key={o} className="absolute left-1/2 top-1/2 h-[340px] w-[250px] animate-pulse rounded-2xl bg-neutral-200/80 sm:h-[400px] sm:w-[290px]"
+              <div key={o} className="absolute left-1/2 top-1/2 h-[340px] w-[250px] animate-pulse rounded-2xl bg-neutral-200 sm:h-[400px] sm:w-[290px]"
                 style={{ transform: `translate(calc(-50% + ${o * 300}px), -50%) scale(${o === 0 ? 1 : 0.82})` }} />
             ))
           : top.map((d, k) => {
@@ -202,10 +171,10 @@ function DealCard({ d }: { d: Deal }) {
   return (
     <article className="group">
       <a href={d.url} target="_blank" rel="noopener noreferrer" className="block">
-        <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100 shadow-sm transition hover:shadow-md">
+        <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={d.image} alt={d.name} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
-          <span className="absolute left-2 top-2 rounded-md bg-[#d6336c] px-2 py-1 text-[11px] font-bold text-white shadow">-{d.pct} %</span>
+          <span className="absolute left-2 top-2 rounded-md bg-[#d6336c] px-2 py-1 text-[11px] font-bold text-white">-{d.pct} %</span>
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleSaved(); }}
             aria-label="Ajouter aux favoris"
@@ -215,7 +184,7 @@ function DealCard({ d }: { d: Deal }) {
               <path d={HEART} />
             </svg>
           </button>
-          <span className="absolute inset-x-2 bottom-2 translate-y-2 rounded-lg bg-black/90 py-2 text-center text-sm font-semibold text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
+          <span className="absolute inset-x-2 bottom-2 translate-y-2 rounded-lg bg-black py-2 text-center text-sm font-semibold text-white opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
             Voir chez {d.retailer}
           </span>
         </div>
@@ -292,7 +261,7 @@ function AllSection({ id, title, subtitle, deals, loading }: { id: string; title
         </div>
         <label className="flex items-center gap-2 text-sm text-neutral-600">
           Trier
-          <select value={sort} onChange={(e) => setSort(e.target.value as SortId)} className="rounded-full border border-neutral-300 bg-white/80 px-3 py-1.5 text-sm font-semibold text-neutral-800 outline-none backdrop-blur focus:border-[#753AA9]">
+          <select value={sort} onChange={(e) => setSort(e.target.value as SortId)} className="rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-800 outline-none focus:border-[#753AA9]">
             {SORTS.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </label>
@@ -304,7 +273,7 @@ function AllSection({ id, title, subtitle, deals, loading }: { id: string; title
           </div>
           {left > 0 && (
             <div className="mt-8 text-center">
-              <button onClick={() => setCount(count + PAGE)} className="rounded-full border border-neutral-300 bg-white/90 px-8 py-3 text-sm font-bold text-neutral-900 shadow-sm backdrop-blur hover:border-neutral-900">
+              <button onClick={() => setCount(count + PAGE)} className="rounded-full border border-neutral-300 bg-white px-8 py-3 text-sm font-bold text-neutral-900 hover:border-neutral-900">
                 Voir plus ({left} restants)
               </button>
             </div>
@@ -350,6 +319,7 @@ export default function HomePage() {
     [pool, group, profile, q]
   );
 
+  // « Pour toi » : ce qui ressemble à ce que la personne a aimé au Swipe
   const forYou = useMemo(() => {
     if (!taste || taste.swipes < 5) return [];
     return filtered
@@ -358,6 +328,7 @@ export default function HomePage() {
       .slice(0, 24);
   }, [filtered, taste]);
 
+  // Top 3 : les plus grosses économies en $, une boutique différente par place
   const top3 = useMemo(() => {
     const sorted = pool.filter((d) => d.pct >= 30 && passes(d, profile)).sort((x, y) => (y.was - y.price) - (x.was - x.price));
     const out: Deal[] = [];
@@ -373,6 +344,7 @@ export default function HomePage() {
 
   const biggest = useMemo(() => mixByRetailer(filtered), [filtered]);
   const cheap = useMemo(() => mixByRetailer(filtered.filter((d) => d.price <= 15), (d) => -d.pct), [filtered]);
+  // Un peu de tout : on alterne entre les catégories
   const family = useMemo(() => {
     const buckets = (["femme", "homme", "ado", "enfant", "bebe"] as const).map((g) => mixByRetailer(filtered.filter((d) => groupOf(d.gender) === g)));
     const out: Deal[] = [];
@@ -383,16 +355,13 @@ export default function HomePage() {
   const loading = !deals && !loadError;
 
   return (
-    <div className={`${inter.className} relative min-h-screen bg-white/80 text-neutral-900 overflow-x-hidden`}>
-      {/* Intégration du background animé flottant */}
-      <AnimatedBackground />
-
+    <div className={`${inter.className} min-h-screen bg-white text-neutral-900`}>
       <AccountSync />
-      <div className="bg-neutral-900 py-2 text-center text-xs font-medium text-white shadow-inner">
+      <div className="bg-neutral-900 py-2 text-center text-xs font-medium text-white">
         Les meilleures aubaines des magasins, au même endroit
       </div>
 
-      <header className="sticky top-0 z-30 border-b border-neutral-200/60 bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-neutral-200 bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 sm:gap-8 sm:px-6">
           <Logo className="text-3xl sm:text-4xl" />
 
@@ -402,7 +371,7 @@ export default function HomePage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Chercher une marque, un item..."
-              className="w-full rounded-full border border-neutral-300/85 bg-white/70 py-2.5 pl-5 pr-12 text-sm outline-none backdrop-blur transition focus:border-[#753AA9] focus:bg-white focus:ring-2 focus:ring-[#753AA9]/20"
+              className="w-full rounded-full border border-neutral-300 bg-neutral-50 py-2.5 pl-5 pr-12 text-sm outline-none transition focus:border-[#753AA9] focus:bg-white focus:ring-2 focus:ring-[#753AA9]/20"
             />
             <span className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-[#753AA9] text-white">
               <Icon d={SEARCH} className="h-4 w-4" />
@@ -427,7 +396,7 @@ export default function HomePage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Chercher une marque, un item..."
-            className="w-full rounded-full border border-neutral-300 bg-white/80 px-4 py-2 text-sm outline-none backdrop-blur focus:border-[#753AA9]"
+            className="w-full rounded-full border border-neutral-300 bg-neutral-50 px-4 py-2 text-sm outline-none focus:border-[#753AA9]"
           />
         </div>
 
@@ -437,7 +406,7 @@ export default function HomePage() {
 
         <nav className="border-t border-neutral-100">
           <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-2.5 sm:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <Link href="/swipe" className="shrink-0 rounded-full bg-[#753AA9] px-5 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90">
+            <Link href="/swipe" className="shrink-0 rounded-full bg-[#753AA9] px-5 py-1.5 text-sm font-semibold text-white transition hover:opacity-90">
               Swipe
             </Link>
             <a href="#tout" className="shrink-0 rounded-full border border-[#753AA9] px-4 py-1.5 text-sm font-semibold text-[#753AA9] transition hover:bg-[#f3edfa]">
@@ -448,7 +417,7 @@ export default function HomePage() {
                 key={g.id}
                 onClick={() => setGroup(g.id)}
                 className={`shrink-0 rounded-full border px-4 py-1.5 text-sm font-medium transition ${
-                  group === g.id ? "border-neutral-900 bg-neutral-900 text-white shadow-sm" : "border-neutral-200/80 bg-white/50 text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
+                  group === g.id ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 text-neutral-700 hover:border-neutral-900 hover:text-neutral-900"
                 }`}
               >
                 {g.label}
@@ -475,19 +444,19 @@ export default function HomePage() {
         ) : (
           <>
             <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6">
-              <Link href="/swipe" className="flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#753AA9] to-[#39D2C0] px-5 py-4 text-white shadow-lg transition hover:opacity-95 hover:shadow-xl">
+              <Link href="/swipe" className="flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#753AA9] to-[#39D2C0] px-5 py-4 text-white shadow-md transition hover:opacity-95">
                 <div>
                   <p className="text-lg font-extrabold">Swipe pour trouver tes aubaines</p>
                   <p className="text-sm text-white/90">Dropz apprend ce que tu aimes et te garde tes trouvailles, avec une alerte quand le prix baisse.</p>
                 </div>
-                <span className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#753AA9] shadow">Essayer</span>
+                <span className="shrink-0 rounded-full bg-white px-4 py-2 text-sm font-bold text-[#753AA9]">Essayer</span>
               </Link>
             </div>
             {!loading && filtered.length === 0 && (
               <div className="mx-auto max-w-md px-4 py-16 text-center">
                 <h2 className="text-xl font-extrabold">Rien ne correspond à tes filtres</h2>
                 <p className="mt-2 text-sm text-neutral-500">Élargis ta recherche : retire un filtre ou augmente ton budget.</p>
-                <button onClick={() => updateProfile({ ...profile, sizes: [], types: [], maxPrice: null, minPct: null })} className="mt-5 rounded-full bg-[#753AA9] px-6 py-3 text-sm font-semibold text-white shadow hover:opacity-90">Effacer les filtres</button>
+                <button onClick={() => updateProfile({ ...profile, sizes: [], types: [], maxPrice: null, minPct: null })} className="mt-5 rounded-full bg-[#753AA9] px-6 py-3 text-sm font-semibold text-white hover:opacity-90">Effacer les filtres</button>
               </div>
             )}
             <Section title="Pour toi" subtitle="D'après ce que tu as aimé dans le Swipe" deals={forYou} loading={false} />
@@ -501,7 +470,7 @@ export default function HomePage() {
         )}
       </main>
 
-      <footer className="mt-10 border-t border-neutral-200/60 bg-neutral-50/80 backdrop-blur">
+      <footer className="mt-10 border-t border-neutral-200 bg-neutral-50">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-8 text-center text-sm text-neutral-500 sm:flex-row sm:text-left">
           <Logo className="text-2xl" />
           <p className="max-w-md text-xs">
