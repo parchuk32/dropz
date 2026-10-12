@@ -6,6 +6,8 @@ import { Inter } from "next/font/google";
 import { loadSaved, removeSaved, type Saved } from "../lib/store";
 import AccountSync from "../lib/AccountSync";
 import { useUser } from "../lib/useUser";
+import ConsentBanner from "../lib/ConsentBanner";
+import { track } from "../lib/track.ts";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 type Live = { id: string | number; price: number; was: number; pct: number; sizes: string[] };
@@ -44,6 +46,7 @@ export default function FavorisPage() {
   return (
     <div className={`${inter.className} min-h-screen bg-white text-neutral-900`}>
       <AccountSync />
+      <ConsentBanner />
       <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-4">
         <Link href="/" className="text-sm font-semibold text-neutral-600 hover:text-black">← Accueil</Link>
         <h1 className="text-xl font-extrabold">Mes trouvailles</h1>
@@ -99,7 +102,7 @@ export default function FavorisPage() {
                       {status === "load" && "Vérification du prix…"}
                     </p>
                     <div className="mt-auto flex items-center gap-3 pt-2">
-                      <a href={s.url} target="_blank" rel="noopener noreferrer" className="rounded-full bg-neutral-900 px-4 py-1.5 text-xs font-semibold text-white hover:opacity-90">Voir chez {s.retailer}</a>
+                      <a href={s.url} onClick={() => track("click_out", s)} target="_blank" rel="noopener noreferrer" className="rounded-full bg-neutral-900 px-4 py-1.5 text-xs font-semibold text-white hover:opacity-90">Voir chez {s.retailer}</a>
                       <button onClick={() => remove(s.id)} className="text-xs font-semibold text-neutral-400 hover:text-rose-600">Retirer</button>
                     </div>
                   </div>

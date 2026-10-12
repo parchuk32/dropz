@@ -1,0 +1,46 @@
+name: Mettre à jour les aubaines
+
+on:
+  schedule:
+    - cron: "0 9 * * *"   # tous les jours à 9 h UTC (5 h à Montréal en heure d'été, 4 h en hiver)
+  workflow_dispatch: {}   # permet aussi de le lancer à la main depuis l'onglet Actions
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-deals
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Collecter les aubaines
+        run: node scripts/collect-deals.mjs
+
+      - name: Enregistrer les changements
+        run: |
+          git config user.name "dropz-bot"
+          git config user.email "dropz-bot@users.noreply.github.com"
+          git add public/deals.json public/price-history.json public/meta.json
+          if git diff --cached --quiet; then
+            echo "Aucun changement à enregistrer."
+          else
+            git commit -m "Mise à jour quotidienne des aubaines"
+            git push
+          fi
+
+      # Facultatif : force Vercel à republier le site (voir les explications)
+      - name: Republier le site sur Vercel
+        if: env.VERCEL_DEPLOY_HOOK != ''
+        run: curl -s -X POST "$VERCEL_DEPLOY_HOOK"

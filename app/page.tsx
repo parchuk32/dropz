@@ -8,6 +8,9 @@ import { DEFAULT_PROFILE, loadProfile, passes, saveProfile, type Profile } from 
 import FilterBar from "./lib/FilterBar";
 import AccountSync from "./lib/AccountSync";
 import { useUser } from "./lib/useUser";
+import ConsentBanner from "./lib/ConsentBanner";
+import PriceBadges from "./lib/PriceBadges";
+import { track } from "./lib/track.ts";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 
@@ -15,6 +18,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "
 type Deal = {
   retailer: string; id: number; name: string; brand: string; price: number; was: number; pct: number;
   sizes: string[]; gender: string; image: string; url: string; collection: string;
+  tracked?: number; low?: boolean; drop?: number;
 };
 type Group = "all" | "femme" | "homme" | "ado" | "enfant" | "bebe";
 
@@ -68,6 +72,16 @@ function sortDeals(list: Deal[], sort: SortId): Deal[] {
   if (sort === "prixDesc") return [...list].sort((a, b) => b.price - a.price);
   if (sort === "boutique") return [...list].sort((a, b) => a.retailer.localeCompare(b.retailer) || b.pct - a.pct);
   return mixByRetailer(list, (d) => hash(String(d.id)));
+}
+
+// « il y a 5 h », « il y a 2 jours »… à partir d'une date ISO
+function timeAgo(iso: string): string {
+  const h = Math.round((Date.now() - Date.parse(iso)) / 3600000);
+  if (!isFinite(h) || h < 0) return "";
+  if (h < 1) return "il y a moins d'une heure";
+  if (h < 24) return `il y a ${h} h`;
+  const d = Math.round(h / 24);
+  return `il y a ${d} jour${d > 1 ? "s" : ""}`;
 }
 
 // ---------- Icônes ----------
@@ -126,7 +140,7 @@ function Hero({ top, loading }: { top: Deal[]; loading: boolean }) {
                   href={d.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={(e) => { if (!center) { e.preventDefault(); setI(k); } }}
+                  onClick={(e) => { if (!center) { e.preventDefault(); setI(k); } else track("click_out", d); }}
                   className="absolute left-1/2 top-1/2 block h-[340px] w-[250px] overflow-hidden rounded-2xl bg-neutral-100 shadow-xl ring-1 ring-black/5 transition-all duration-700 ease-out sm:h-[400px] sm:w-[290px]"
                   style={{
                     transform: `translate(calc(-50% + ${offset * 300}px), -50%) scale(${center ? 1 : 0.82})`,
@@ -167,10 +181,10 @@ function Hero({ top, loading }: { top: Deal[]; loading: boolean }) {
 function DealCard({ d }: { d: Deal }) {
   const [liked, setLiked] = useState(false);
   useEffect(() => { setLiked(loadSaved().some((s) => String(s.id) === String(d.id))); }, [d.id]);
-  const toggleSaved = () => { if (liked) removeSaved(d.id); else addSaved(d, false); setLiked(!liked); };
+  const toggleSaved = () => { if (liked) removeSaved(d.id); else addSaved(d, false); track(liked ? "unsave" : "save", d); setLiked(!liked); };
   return (
     <article className="group">
-      <a href={d.url} target="_blank" rel="noopener noreferrer" className="block">
+      <a href={d.url} onClick={() => track("click_out", d)} target="_blank" rel="noopener noreferrer" className="block">
         <div className="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={d.image} alt={d.name} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-105" />
@@ -195,6 +209,7 @@ function DealCard({ d }: { d: Deal }) {
             <span className="text-base font-bold text-[#d6336c]">{fmt(d.price)}</span>
             <span className="text-xs text-neutral-400 line-through">{fmt(d.was)}</span>
           </div>
+          <PriceBadges low={d.low} drop={d.drop} tracked={d.tracked} />
           {d.sizes.length > 0 && <p className="mt-1 truncate text-xs text-neutral-500">Tailles : {d.sizes.join(", ")}</p>}
         </div>
       </a>
@@ -296,6 +311,9 @@ export default function HomePage() {
   const [taste, setTaste] = useState<Taste | null>(null);
   const [savedCount, setSavedCount] = useState(0);
   const { user } = useUser();
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  useEffect(() => { fetch("/meta.json").then((r) => r.json()).then((m) => setUpdatedAt(m.updatedAt)).catch(() => {}); }, []);
+  const updatedLabel = updatedAt ? `Aubaines mises à jour ${timeAgo(updatedAt)}` : "";
 
   useEffect(() => {
     setTaste(loadTaste()); setSavedCount(loadSaved().length); setProfile(loadProfile());
@@ -357,6 +375,7 @@ export default function HomePage() {
   return (
     <div className={`${inter.className} min-h-screen bg-white text-neutral-900`}>
       <AccountSync />
+      <ConsentBanner />
       <div className="bg-neutral-900 py-2 text-center text-xs font-medium text-white">
         Les meilleures aubaines des magasins, au même endroit
       </div>
@@ -476,7 +495,13 @@ export default function HomePage() {
           <p className="max-w-md text-xs">
             Aubaines tirées des sites des magasins. Les prix et les stocks sont ceux du site en ligne et peuvent changer ; un article en ligne n&apos;est pas toujours disponible en magasin.
           </p>
-          <p>© 2026 Dropz.</p>
+          <div className="flex flex-col items-center gap-1 sm:items-end">
+            <p className="flex gap-3">
+              <Link href="/confidentialite" className="underline hover:text-neutral-900">Confidentialité</Link>
+              <Link href="/conditions" className="underline hover:text-neutral-900">Conditions</Link>
+            </p>
+            <p>© 2026 Dropz.{updatedLabel && <> · {updatedLabel}</>}</p>
+          </div>
         </div>
       </footer>
     </div>

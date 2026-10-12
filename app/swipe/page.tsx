@@ -6,6 +6,9 @@ import { Inter } from "next/font/google";
 import { addSaved, removeSaved, learn, loadSaved, loadTaste, affinity, loadSeen, markSeen, unmarkSeen, clearSeen, type Taste } from "../lib/store";
 import AccountSync from "../lib/AccountSync";
 import { useUser } from "../lib/useUser";
+import ConsentBanner from "../lib/ConsentBanner";
+import PriceBadges from "../lib/PriceBadges";
+import { track } from "../lib/track.ts";
 import { DEFAULT_PROFILE, loadProfile, passes, saveProfile, type Profile } from "../lib/filters-core";
 import FilterBar from "../lib/FilterBar";
 
@@ -16,6 +19,7 @@ type Group = "all" | "femme" | "homme" | "ado" | "enfant" | "bebe";
 type Deal = {
   retailer: string; id: number; name: string; brand: string; price: number; was: number; pct: number;
   sizes: string[]; gender: string; image: string; url: string; collection: string;
+  tracked?: number; low?: boolean; drop?: number;
 };
 type RawStore = { id: string; name: string; lat: number; lng: number; address?: string; city?: string };
 type Branch = { name: string; area: string; lat: number; lng: number };
@@ -130,6 +134,7 @@ function CardFace({ d }: { d: Deal }) {
           <span className="text-3xl font-black text-white">{fmt(d.price)}</span>
           <span className="text-base text-white/50 line-through">{fmt(d.was)}</span>
         </div>
+        <PriceBadges low={d.low} drop={d.drop} tracked={d.tracked} dark />
         {d.sizes.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1">
             {d.sizes.slice(0, 6).map((z) => <span key={z} className="rounded-md bg-white/15 px-1.5 py-0.5 text-[10px] font-bold text-white/90 ring-1 ring-white/20">{z}</span>)}
@@ -232,6 +237,7 @@ export default function SwipePage() {
     setExit(dir);
     burst(dir);
     markSeen(d.id);
+    track(dir === "left" ? "swipe_left" : dir === "right" ? "swipe_right" : "swipe_up", d);
     try { navigator.vibrate?.(dir === "left" ? 8 : 18); } catch { /* pas de vibration sur cet appareil */ }
     if (dir !== "left") addSaved(d, dir === "up");
     const t = learn(d, dir === "up" ? 3 : dir === "right" ? 2 : -1);
@@ -301,6 +307,7 @@ export default function SwipePage() {
   return (
     <div className={`${inter.className} relative flex min-h-screen flex-col overflow-hidden bg-[#09051a] text-white`}>
       <AccountSync />
+      <ConsentBanner />
       <style>{DZ_CSS}</style>
       <Backdrop image={current?.image} />
       <header className="relative z-10 mx-auto flex w-full max-w-md items-center justify-between px-5 py-4">
@@ -412,7 +419,7 @@ export default function SwipePage() {
                     <span className="font-semibold text-white">{current.retailer}</span>
                     {current.sizes.length > 0 && <> · Tailles : {current.sizes.join(", ")}</>}
                   </p>
-                  <a href={current.url} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 transition hover:opacity-90 active:scale-95">
+                  <a href={current.url} onClick={() => track("click_out", current)} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-full bg-white px-4 py-2 text-xs font-bold text-neutral-900 transition hover:opacity-90 active:scale-95">
                     Voir l&apos;article
                   </a>
                 </div>
@@ -450,7 +457,7 @@ export default function SwipePage() {
                     <p className="truncate text-sm font-semibold">{p.name}</p>
                     <p className="text-xs"><span className="font-bold text-[#d6336c]">{fmt(p.price)}</span> <span className="text-neutral-400 line-through">{fmt(p.was)}</span> · -{p.pct} %</p>
                   </div>
-                  <a href={p.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs font-semibold text-[#753AA9] hover:underline">Voir</a>
+                  <a href={p.url} onClick={() => track("click_out", p)} target="_blank" rel="noopener noreferrer" className="shrink-0 text-xs font-semibold text-[#753AA9] hover:underline">Voir</a>
                 </div>
               ))}
               {liked.length + cart.length === 0 && <p className="text-center text-sm text-white/60">Rien de sélectionné cette fois.</p>}
@@ -465,7 +472,7 @@ export default function SwipePage() {
       </main>
 
       <footer className="relative z-10 pb-4 text-center text-[11px] text-white/40">
-        Aubaines : sites des magasins · Magasins : © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline">contributeurs OpenStreetMap</a>
+        <Link href="/confidentialite" className="underline">Confidentialité</Link> · <Link href="/conditions" className="underline">Conditions</Link> · Aubaines : sites des magasins · Magasins : © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="underline">contributeurs OpenStreetMap</a>
       </footer>
     </div>
   );

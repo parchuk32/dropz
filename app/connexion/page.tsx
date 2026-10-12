@@ -6,6 +6,7 @@ import { Inter } from "next/font/google";
 import { supabase, supabaseConfigured } from "../lib/supabase";
 import { useUser } from "../lib/useUser";
 import AccountSync from "../lib/AccountSync";
+import ConsentBanner from "../lib/ConsentBanner";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"] });
 
@@ -75,6 +76,7 @@ export default function ConnexionPage() {
   return (
     <div className={`${inter.className} flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#f3edfa] to-white px-5 py-10 text-neutral-900`}>
       <AccountSync />
+      <ConsentBanner />
       <Link href="/" className="mb-6 bg-clip-text text-4xl font-extrabold tracking-tight text-transparent" style={{ backgroundImage: "linear-gradient(90deg,#753AA9,#39D2C0)" }}>Dropz.</Link>
 
       <div className={box}>
@@ -134,7 +136,11 @@ export default function ConnexionPage() {
           </div>
         )}
       </div>
-      <p className="mt-6 max-w-xs text-center text-xs text-neutral-500">Le compte est facultatif : le site fonctionne sans.</p>
+      <p className="mt-6 max-w-xs text-center text-xs text-neutral-500">
+        Le compte est facultatif : le site fonctionne sans. En créant un compte, tu acceptes les{" "}
+        <Link href="/conditions" className="underline">conditions d&apos;utilisation</Link> et la{" "}
+        <Link href="/confidentialite" className="underline">politique de confidentialité</Link>.
+      </p>
     </div>
   );
 }

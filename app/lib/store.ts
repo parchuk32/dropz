@@ -13,7 +13,7 @@ function read<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v ? (JSON.parse(v) as T) : fallback; } catch { return fallback; }
 }
 function write(key: string, value: unknown) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* stockage plein ou bloqué : on ignore */ }
+  try { localStorage.setItem(key, JSON.stringify(value)); window.dispatchEvent(new Event("dropz:changed")); } catch { /* stockage plein ou bloqué : on ignore */ }
 }
 
 function notify() {
