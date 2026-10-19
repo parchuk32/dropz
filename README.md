@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dropz
 
-## Getting Started
+Dropz rassemble chaque jour les rabais de boutiques québécoises et te les présente sous forme de cartes à swiper. Tu sauvegardes tes coups de cœur, tu filtres par catégorie et par taille, et tu vois l'historique des prix pour savoir si une aubaine en est vraiment une.
 
-First, run the development server:
+Site : https://dropz-brown.vercel.app
+
+## Comment ça marche
+
+- **Collecte** : `scripts/collect-deals.mjs` lit les catalogues publics des boutiques (en respectant leur `robots.txt`) et écrit `public/deals.json`, `public/price-history.json` et `public/meta.json`.
+- **Automatisation** : le workflow GitHub Actions `update-deals.yml` lance la collecte tous les jours à 9 h UTC, enregistre les changements et peut redéployer le site sur Vercel.
+- **Comptes** : Supabase gère la connexion et la synchronisation des favoris.
+- **Statistiques** : seulement avec le consentement de la personne, et sans information personnelle.
+
+## Technologies
+
+Next.js, React, TypeScript, Tailwind CSS, Supabase.
+
+## Lancer le projet en local
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvre ensuite http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+La connexion à Supabase est configurée dans `app/lib/supabase.ts`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Mettre à jour les aubaines à la main
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+node scripts/collect-deals.mjs
+```
